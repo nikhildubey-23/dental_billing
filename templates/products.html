@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+{% block title %}Products - Dental Billing{% endblock %}
+{% block heading %}Products{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h3>Manage Products</h3>
+        <button class="btn btn-sm btn-primary" onclick="openProductModal()">+ Add Product</button>
+    </div>
+    <div class="table-responsive">
+        <table>
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Name</th>
+                    <th>HSN Code</th>
+                    <th>Price (₹)</th>
+                    <th>GST (%)</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in products %}
+                <tr>
+                    <td>{{ p.id }}</td>
+                    <td>{{ p.name }}</td>
+                    <td>{{ p.hsn_code }}</td>
+                    <td>₹{{ "%.2f"|format(p.price) }}</td>
+                    <td>{{ "%.1f"|format(p.gst_rate) }}%</td>
+                    <td class="action-cell">
+                        <button class="btn btn-xs" onclick="editProduct({{ p.id }})">Edit</button>
+                        <button class="btn btn-xs btn-danger" onclick="deleteProduct({{ p.id }})">Del</button>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" class="empty-state">No products added yet.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="modal-overlay" id="productModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h3 id="productModalTitle">Add Product</h3>
+            <button type="button" class="modal-close" onclick="closeProductModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <input type="hidden" id="editProductId">
+            <div class="form-group">
+                <label>Name *</label>
+                <input type="text" id="prodName" class="form-control" required>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>HSN Code</label>
+                    <input type="text" id="prodHsn" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label>Price (₹) *</label>
+                    <input type="number" id="prodPrice" class="form-control" step="0.01" required>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>GST Rate (%)</label>
+                <input type="number" id="prodGst" class="form-control" step="0.1" value="0">
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-primary" onclick="saveProduct()">Save</button>
+            <button type="button" class="btn" onclick="closeProductModal()">Cancel</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function openProductModal(data) {
+    document.getElementById('editProductId').value = data ? data.id : '';
+    document.getElementById('prodName').value = data ? data.name : '';
+    document.getElementById('prodHsn').value = data ? data.hsn_code : '';
+    document.getElementById('prodPrice').value = data ? data.price : '';
+    document.getElementById('prodGst').value = data ? data.gst_rate : '0';
+    document.getElementById('productModalTitle').textContent = data ? 'Edit Product' : 'Add Product';
+    document.getElementById('productModal').classList.add('show');
+}
+
+function closeProductModal() {
+    document.getElementById('productModal').classList.remove('show');
+}
+
+function saveProduct() {
+    const id = document.getElementById('editProductId').value;
+    const data = {
+        name: document.getElementById('prodName').value.trim(),
+        hsn_code: document.getElementById('prodHsn').value.trim(),
+        price: parseFloat(document.getElementById('prodPrice').value) || 0,
+        gst_rate: parseFloat(document.getElementById('prodGst').value) || 0,
+    };
+    if (!data.name) return alert('Name is required');
+    const url = id ? `/api/products/${id}` : '/api/products';
+    const method = id ? 'PUT' : 'POST';
+    fetch(url, { method, headers: {'Content-Type':'application/json'}, body: JSON.stringify(data) })
+        .then(r => r.json())
+        .then(() => location.reload())
+        .catch(() => alert('Error saving product'));
+}
+
+function editProduct(id) {
+    fetch(`/api/products/${id}`)
+        .then(r => r.json())
+        .then(d => openProductModal(d))
+        .catch(() => alert('Error fetching product'));
+}
+
+function deleteProduct(id) {
+    if (!confirm('Delete this product?')) return;
+    fetch(`/api/products/${id}`, { method: 'DELETE' })
+        .then(r => r.json())
+        .then(d => { if (d.success) location.reload(); })
+        .catch(() => alert('Error deleting product'));
+}
+</script>
+{% endblock %}

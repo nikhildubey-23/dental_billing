@@ -1,0 +1,164 @@
+{% extends "base.html" %}
+{% block title %}New Bill - Dental Billing{% endblock %}
+{% block heading %}New Bill{% endblock %}
+
+{% block content %}
+<form id="billForm" class="bill-form">
+    <div class="form-row">
+        <div class="form-group" style="flex:2;">
+            <label for="customerSelect">Customer</label>
+            <div class="input-with-btn">
+                <select id="customerSelect" class="form-control">
+                    <option value="">Walk-in Customer</option>
+                    {% for c in customers %}
+                    <option value="{{ c.id }}">{{ c.name }} {% if c.phone %}— {{ c.phone }}{% endif %}</option>
+                    {% endfor %}
+                </select>
+                <button type="button" class="btn btn-sm" onclick="openCustomerModal()" title="Add Customer">+</button>
+            </div>
+        </div>
+        <div class="form-group" style="flex:1;">
+            <label for="customerPhone">Phone</label>
+            <input type="text" id="customerPhone" class="form-control" readonly>
+        </div>
+        <div class="form-group" style="flex:1;">
+            <label for="customerGstin">GSTIN</label>
+            <input type="text" id="customerGstin" class="form-control" readonly>
+        </div>
+    </div>
+
+    <div class="gst-toggle">
+        <label class="toggle-label">
+            <input type="checkbox" id="isGst" checked>
+            <span class="toggle-switch"></span>
+            GST Invoice
+        </label>
+    </div>
+
+    <div class="card" style="margin-top:16px;">
+        <div class="card-header">
+            <h3>Bill Items</h3>
+            <button type="button" class="btn btn-sm" onclick="addRow()">+ Add Item</button>
+        </div>
+        <div class="table-responsive">
+            <table id="itemsTable">
+                <thead>
+                    <tr>
+                        <th style="width:30px;">#</th>
+                        <th>Item</th>
+                        <th style="width:90px;">HSN</th>
+                        <th style="width:80px;">Qty</th>
+                        <th style="width:110px;">Rate (₹)</th>
+                        <th style="width:80px;">GST%</th>
+                        <th style="width:110px;">GST Amt</th>
+                        <th style="width:110px;">Total (₹)</th>
+                        <th style="width:40px;"></th>
+                    </tr>
+                </thead>
+                <tbody id="itemsBody">
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="bill-summary">
+        <div class="summary-row">
+            <span>Subtotal</span>
+            <span id="subtotalDisplay">₹0.00</span>
+        </div>
+        <div class="summary-row" id="gstSummaryRow">
+            <span>GST Total</span>
+            <span id="gstTotalDisplay">₹0.00</span>
+        </div>
+        <div class="summary-row summary-grand">
+            <span>Grand Total</span>
+            <span id="grandTotalDisplay">₹0.00</span>
+        </div>
+    </div>
+
+    <div class="form-actions">
+        <button type="button" class="btn btn-primary" onclick="submitBill()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+            Save Bill
+        </button>
+        <button type="button" class="btn" onclick="resetForm()">Reset</button>
+    </div>
+</form>
+
+<div class="modal-overlay" id="customerModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h3>Add Customer</h3>
+            <button type="button" class="modal-close" onclick="closeCustomerModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label>Name *</label>
+                <input type="text" id="newCustName" class="form-control" required>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Phone</label>
+                    <input type="text" id="newCustPhone" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="newCustEmail" class="form-control">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Address</label>
+                <textarea id="newCustAddress" class="form-control" rows="2"></textarea>
+            </div>
+            <div class="form-group">
+                <label>GSTIN</label>
+                <input type="text" id="newCustGstin" class="form-control">
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-primary" onclick="saveCustomer()">Save</button>
+            <button type="button" class="btn" onclick="closeCustomerModal()">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="productModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h3>Add Product</h3>
+            <button type="button" class="modal-close" onclick="closeProductModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label>Name *</label>
+                <input type="text" id="newProdName" class="form-control" required>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>HSN Code</label>
+                    <input type="text" id="newProdHsn" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label>Price (₹) *</label>
+                    <input type="number" id="newProdPrice" class="form-control" step="0.01" required>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>GST Rate (%)</label>
+                <input type="number" id="newProdGst" class="form-control" step="0.1" value="0">
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-primary" onclick="saveProduct()">Save</button>
+            <button type="button" class="btn" onclick="closeProductModal()">Cancel</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const products = {{ products|tojson }};
+const customers = {{ customers|tojson }};
+</script>
+{% endblock %}

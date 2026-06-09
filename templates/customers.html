@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+{% block title %}Customers - Dental Billing{% endblock %}
+{% block heading %}Customers{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h3>Manage Customers</h3>
+        <button class="btn btn-sm btn-primary" onclick="openCustomerModal()">+ Add Customer</button>
+    </div>
+    <div class="table-responsive">
+        <table>
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Name</th>
+                    <th>Phone</th>
+                    <th>Email</th>
+                    <th>GSTIN</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for c in customers %}
+                <tr>
+                    <td>{{ c.id }}</td>
+                    <td><strong>{{ c.name }}</strong></td>
+                    <td>{{ c.phone }}</td>
+                    <td>{{ c.email }}</td>
+                    <td>{{ c.gstin }}</td>
+                    <td class="action-cell">
+                        <button class="btn btn-xs" onclick="editCustomer({{ c.id }})">Edit</button>
+                        <button class="btn btn-xs btn-danger" onclick="deleteCustomer({{ c.id }})">Del</button>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" class="empty-state">No customers added yet.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="modal-overlay" id="customerModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h3 id="customerModalTitle">Add Customer</h3>
+            <button type="button" class="modal-close" onclick="closeCustomerModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <input type="hidden" id="editCustomerId">
+            <div class="form-group">
+                <label>Name *</label>
+                <input type="text" id="custName" class="form-control" required>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Phone</label>
+                    <input type="text" id="custPhone" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="custEmail" class="form-control">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Address</label>
+                <textarea id="custAddress" class="form-control" rows="2"></textarea>
+            </div>
+            <div class="form-group">
+                <label>GSTIN</label>
+                <input type="text" id="custGstin" class="form-control">
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-primary" onclick="saveCustomer()">Save</button>
+            <button type="button" class="btn" onclick="closeCustomerModal()">Cancel</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function openCustomerModal(data) {
+    document.getElementById('editCustomerId').value = data ? data.id : '';
+    document.getElementById('custName').value = data ? data.name : '';
+    document.getElementById('custPhone').value = data ? data.phone : '';
+    document.getElementById('custEmail').value = data ? data.email : '';
+    document.getElementById('custAddress').value = data ? data.address : '';
+    document.getElementById('custGstin').value = data ? data.gstin : '';
+    document.getElementById('customerModalTitle').textContent = data ? 'Edit Customer' : 'Add Customer';
+    document.getElementById('customerModal').classList.add('show');
+}
+
+function closeCustomerModal() {
+    document.getElementById('customerModal').classList.remove('show');
+}
+
+function saveCustomer() {
+    const id = document.getElementById('editCustomerId').value;
+    const data = {
+        name: document.getElementById('custName').value.trim(),
+        phone: document.getElementById('custPhone').value.trim(),
+        email: document.getElementById('custEmail').value.trim(),
+        address: document.getElementById('custAddress').value.trim(),
+        gstin: document.getElementById('custGstin').value.trim(),
+    };
+    if (!data.name) return alert('Name is required');
+    const url = id ? `/api/customers/${id}` : '/api/customers';
+    const method = id ? 'PUT' : 'POST';
+    fetch(url, { method, headers: {'Content-Type':'application/json'}, body: JSON.stringify(data) })
+        .then(r => r.json())
+        .then(() => location.reload())
+        .catch(() => alert('Error saving customer'));
+}
+
+function editCustomer(id) {
+    fetch(`/api/customers/${id}`)
+        .then(r => r.json())
+        .then(d => openCustomerModal(d))
+        .catch(() => alert('Error fetching customer'));
+}
+
+function deleteCustomer(id) {
+    if (!confirm('Delete this customer?')) return;
+    fetch(`/api/customers/${id}`, { method: 'DELETE' })
+        .then(r => r.json())
+        .then(d => { if (d.success) location.reload(); })
+        .catch(() => alert('Error deleting customer'));
+}
+</script>
+{% endblock %}

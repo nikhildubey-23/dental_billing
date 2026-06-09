@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% block title %}{{ bill.bill_number }} - Dental Billing{% endblock %}
+{% block heading %}Bill {{ bill.bill_number }}{% endblock %}
+
+{% block content %}
+<div class="print-actions no-print">
+    <button class="btn btn-primary" onclick="window.print()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+        Print / Save PDF
+    </button>
+    <a href="{{ url_for('download_bill_pdf', bill_id=bill.id) }}" class="btn">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Download PDF
+    </a>
+    <a href="{{ url_for('bills') }}" class="btn">Back to Bills</a>
+</div>
+
+<div class="bill-paper" id="billPreview">
+    <div class="bill-header">
+        <div class="bill-header-left">
+            <h1>DENTAL BILLING</h1>
+            <p>Dental Clinic &amp; Services</p>
+        </div>
+        <div class="bill-header-right">
+            {% if bill.is_gst %}
+            <span class="badge badge-gst" style="font-size:14px;padding:6px 20px;">GST INVOICE</span>
+            {% else %}
+            <span class="badge badge-non-gst" style="font-size:14px;padding:6px 20px;">NON-GST INVOICE</span>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="bill-details">
+        <div class="bill-details-left">
+            <h3>Bill To</h3>
+            <p><strong>{{ bill.customer_name }}</strong></p>
+            {% if bill.customer_phone %}<p>{{ bill.customer_phone }}</p>{% endif %}
+            {% if bill.customer_address %}<p>{{ bill.customer_address }}</p>{% endif %}
+            {% if bill.is_gst and bill.customer_gstin %}<p>GSTIN: {{ bill.customer_gstin }}</p>{% endif %}
+        </div>
+        <div class="bill-details-right">
+            <h3>Invoice</h3>
+            <p><strong>{{ bill.bill_number }}</strong></p>
+            <p>Date: {{ bill.created_at.strftime('%d-%m-%Y') }}</p>
+        </div>
+    </div>
+
+    <table class="bill-items-table">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Item</th>
+                <th>HSN</th>
+                <th>Qty</th>
+                <th>Rate</th>
+                <th>GST%</th>
+                <th>GST Amt</th>
+                <th>Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in bill.items %}
+            <tr>
+                <td>{{ loop.index }}</td>
+                <td>{{ item.product_name }}</td>
+                <td>{{ item.hsn_code }}</td>
+                <td>{{ item.quantity }}</td>
+                <td>₹{{ "%.2f"|format(item.price) }}</td>
+                <td>{{ "%.1f"|format(item.gst_rate) }}%</td>
+                <td>₹{{ "%.2f"|format(item.gst_amount) }}</td>
+                <td>₹{{ "%.2f"|format(item.total) }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="bill-totals">
+        <table>
+            <tr><td style="text-align:right;padding-right:20px;">Subtotal:</td><td style="text-align:right;">₹{{ "%.2f"|format(bill.subtotal) }}</td></tr>
+            {% if bill.is_gst %}
+            <tr><td style="text-align:right;padding-right:20px;">CGST @ 50%:</td><td style="text-align:right;">₹{{ "%.2f"|format(bill.gst_total / 2) }}</td></tr>
+            <tr><td style="text-align:right;padding-right:20px;">SGST @ 50%:</td><td style="text-align:right;">₹{{ "%.2f"|format(bill.gst_total / 2) }}</td></tr>
+            <tr><td style="text-align:right;padding-right:20px;">GST Total:</td><td style="text-align:right;">₹{{ "%.2f"|format(bill.gst_total) }}</td></tr>
+            {% endif %}
+            <tr class="grand"><td style="text-align:right;padding-right:20px;">Grand Total:</td><td style="text-align:right;">₹{{ "%.2f"|format(bill.grand_total) }}</td></tr>
+        </table>
+    </div>
+
+    <div class="bill-footer">
+        <p>Thank you for your visit! This is a computer-generated invoice.</p>
+    </div>
+</div>
+{% endblock %}

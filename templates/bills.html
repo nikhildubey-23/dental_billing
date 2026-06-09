@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}Bills - Dental Billing{% endblock %}
+{% block heading %}Bill History{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h3>All Bills</h3>
+        <a href="{{ url_for('create_bill') }}" class="btn btn-sm btn-primary">+ New Bill</a>
+    </div>
+    <div class="table-responsive">
+        <table>
+            <thead>
+                <tr>
+                    <th>Bill #</th>
+                    <th>Customer</th>
+                    <th>Phone</th>
+                    <th>Type</th>
+                    <th>Subtotal</th>
+                    <th>GST</th>
+                    <th>Grand Total</th>
+                    <th>Date</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for bill in bills %}
+                <tr>
+                    <td><strong>{{ bill.bill_number }}</strong></td>
+                    <td>{{ bill.customer_name }}</td>
+                    <td>{{ bill.customer_phone }}</td>
+                    <td>
+                        {% if bill.is_gst %}
+                        <span class="badge badge-gst">GST</span>
+                        {% else %}
+                        <span class="badge badge-non-gst">Non-GST</span>
+                        {% endif %}
+                    </td>
+                    <td>₹{{ "%.2f"|format(bill.subtotal) }}</td>
+                    <td>₹{{ "%.2f"|format(bill.gst_total) }}</td>
+                    <td><strong>₹{{ "%.2f"|format(bill.grand_total) }}</strong></td>
+                    <td>{{ bill.created_at.strftime('%d-%m-%Y') }}</td>
+                    <td class="action-cell">
+                        <a href="{{ url_for('view_bill', bill_id=bill.id) }}" class="btn btn-xs" title="View">View</a>
+                        <a href="{{ url_for('download_bill_pdf', bill_id=bill.id) }}" class="btn btn-xs" title="Download PDF">PDF</a>
+                        <button class="btn btn-xs btn-danger" onclick="deleteBill({{ bill.id }})" title="Delete">Del</button>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="9" class="empty-state">No bills found. <a href="{{ url_for('create_bill') }}">Create your first bill</a></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function deleteBill(id) {
+    if (!confirm('Delete this bill?')) return;
+    fetch(`/api/bills/${id}`, { method: 'DELETE' })
+        .then(r => r.json())
+        .then(d => { if (d.success) location.reload(); })
+        .catch(() => alert('Error deleting bill'));
+}
+</script>
+{% endblock %}
